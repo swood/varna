@@ -25,3 +25,11 @@ The main stages of convertation process:
 
 3. Make a channels jsonl:
 `python varna.py --team=Your_default_team --type=channels`
+
+4. Make a jsonl from the export of rooms (Public and Private channels):
+`python varna.py --team=Your_default_team --type=history_rooms`
+
+5. Make a jsonl from the export of users history (Direct channels):
+`python varna.py --team=Your_default_team --type=direct_posts`
+
+Jsonl files by the channel's (direct, private, public) history could be generated with or without attachments as well as an incremental option.

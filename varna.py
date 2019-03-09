@@ -368,7 +368,10 @@ def generate_post_json(type, room_name, room_id, sender, timestamp, result_room_
         post['message'] = attachment_name
         post['create_at'] = timestamp
         attachments = {}
-        attachment_path_mattermost = "%s/rooms/%d/files/%s" % (default_container_path, room_id, attachment_path_ondisk)
+        if not increment:
+            attachment_path_mattermost = "%s/rooms/%d/files/%s" % (default_container_path, room_id, attachment_path_ondisk)
+        else:
+            attachment_path_mattermost = "%s/%s/rooms/%d/files/%s" % (default_container_path, new_import_folder, room_id, attachment_path_ondisk)
         attachments['path'] = attachment_path_mattermost
         post['attachments'] = [attachments]
         global_post['type'] = 'post'
@@ -389,19 +392,34 @@ def parse_room_mattermost(room_json, room_id, room_name, is_increment, last_impo
                         attachment_name = post['UserMessage']['attachment']['name']
                         attachment_path_ondisk = post['UserMessage']['attachment_path']
                         message = ""
-                        if not os.path.exists("rooms/%d/files/%s" % (room_id, attachment_path_ondisk)):
-                            print "skip post %s" %  attachment_path_ondisk
-                            continue
-                        else:
-                            image_file = "rooms/%d/files/%s" % (room_id, attachment_path_ondisk)
-                            try:
-                                im = Image.open(image_file)
-                                heigh, width = im.size
-                            except:
-                                heigh = 0
-                                width = 0
-                            if heigh > image_heigh_limit or width > image_width_limit:
+                        if not increment:
+                            if not os.path.exists("rooms/%d/files/%s" % (room_id, attachment_path_ondisk)):
+                                print "skip post %s" %  attachment_path_ondisk
                                 continue
+                            else:
+                                image_file = "rooms/%d/files/%s" % (room_id, attachment_path_ondisk)
+                                try:
+                                    im = Image.open(image_file)
+                                    heigh, width = im.size
+                                except:
+                                    heigh = 0
+                                    width = 0
+                                if heigh > image_heigh_limit or width > image_width_limit:
+                                    continue
+                        else:
+                            if not os.path.exists("%s/rooms/%d/files/%s" % (new_import_folder, room_id, attachment_path_ondisk)):
+                                print "skip post %s/rooms/%d/files/%s" %  (new_import_folder, room_id, attachment_path_ondisk)
+                                continue
+                            else:
+                                image_file = "%s/rooms/%d/files/%s" % (new_import_folder, room_id, attachment_path_ondisk)
+                                try:
+                                    im = Image.open(image_file)
+                                    heigh, width = im.size
+                                except:
+                                    heigh = 0
+                                    width = 0
+                                if heigh > image_heigh_limit or width > image_width_limit:
+                                    continue
                     else:
                         is_attach = 0
                         attachment_name = ""
@@ -433,7 +451,7 @@ def parse_room_mattermost(room_json, room_id, room_name, is_increment, last_impo
                             attachment_path_ondisk = post['UserMessage']['attachment_path']
                             message = ""
                             if not os.path.exists("%s/rooms/%d/files/%s" % (new_import_folder, room_id, attachment_path_ondisk)):
-                                print "skip post %s" %  attachment_path_ondisk
+                                print "skip post %s/rooms/%d/files/%s" % (new_import_folder, room_id, attachment_path_ondisk)
                                 continue
                             else:
                                 image_file = "%s/rooms/%d/files/%s" % (new_import_folder, room_id, attachment_path_ondisk)
@@ -510,7 +528,10 @@ def make_direct_post(type, sender, receiver, timestamp, message, attachment_path
         channel_members.append(receiver)
         direct_post['channel_members'] = channel_members
         attachments = {}
-        attachment_path_mattermost = "%s/users/files/%s" % (default_container_path, attachment_path)
+        if not increment:
+            attachment_path_mattermost = "%s/users/files/%s" % (default_container_path, attachment_path)
+        else:
+            attachment_path_mattermost = "%s/%s/users/files/%s" % (default_container_path, new_import_folder, attachment_path)
         attachments['path'] = attachment_path_mattermost
         direct_post['attachments'] = [attachments]
         direct_post['user'] = sender
@@ -607,19 +628,34 @@ def parse_direct_posts(user_id, type_export, id_to_nickname_dict, is_new_user):
                     attachment_path = post['PrivateUserMessage']['attachment_path']
                     attachment_name = attachment_path.split("/")[1]
                     message = ""
-                    if not os.path.exists("users/files/%s" % attachment_path):
-                        print "skip post %s" %  attachment_path
-                        continue
-                    else:
-                        image_file = "users/files/%s" % attachment_path
-                        try:
-                            im = Image.open(image_file)
-                            heigh, width = im.size
-                        except:
-                            heigh = 0
-                            width = 0
-                        if heigh > image_heigh_limit or width > image_width_limit:
+                    if not increment:
+                        if not os.path.exists("users/files/%s" % attachment_path):
+                            print "skip post %s" %  attachment_path
                             continue
+                        else:
+                            image_file = "users/files/%s" % attachment_path
+                            try:
+                                im = Image.open(image_file)
+                                heigh, width = im.size
+                            except:
+                                heigh = 0
+                                width = 0
+                            if heigh > image_heigh_limit or width > image_width_limit:
+                                continue
+                    else:
+                        if not os.path.exists("%s/users/files/%s" % (new_import_folder, attachment_path)):
+                            print "skip post %s/users/files/%s" %  (new_import_folder, attachment_path)
+                            continue
+                        else:
+                            image_file = "%s/users/files/%s" % (new_import_folder, attachment_path)
+                            try:
+                                im = Image.open(image_file)
+                                heigh, width = im.size
+                            except:
+                                heigh = 0
+                                width = 0
+                            if heigh > image_heigh_limit or width > image_width_limit:
+                                continue
                 else:
                     continue
 
@@ -861,11 +897,11 @@ elif type == "history_rooms":
                 if is_room_deleted(id) == 0:
                     with open("rooms/%d/history.json" % id, 'r') as room_json:
                         room_history = json.load(room_json)
-                    parse_room_mattermost(room_history, id, room_name)
+                    parse_room_mattermost(room_history, id, room_name, 0,0)
             else:
                 with open("rooms/%d/history.json" % id, 'r') as room_json:
                     room_history = json.load(room_json)
-                parse_room_mattermost(room_history, id, room_name)
+                parse_room_mattermost(room_history, id, room_name,0,0)
     else:
         old_rooms_ids = list()
         new_rooms_ids = list()
@@ -896,8 +932,11 @@ elif type == "history_rooms":
                     parse_room_mattermost(room_history, id, room_name, 0, 0)
             else:
                 if is_room_deleted(id) == 0:
-                    with open("rooms/%d/history.json" % id, 'r') as old_room_json:
-                        room_history_old_history = json.load(old_room_json)
+                    if os.path.isfile("rooms/%d/history.json" % id):
+                        with open("rooms/%d/history.json" % id, 'r') as old_room_json:
+                            room_history_old_history = json.load(old_room_json)
+                    else:
+                        room_history_old_history = ""
                     try:
                         last_imported_message_id = room_history_old_history[0]['UserMessage']['id']
                     except:
